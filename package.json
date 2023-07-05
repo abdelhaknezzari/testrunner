@@ -4,7 +4,7 @@
   "publisher": "AbdelhakNEZZARI",
   "description": "run tests from gherkin files",
   "repository": "https://github.com/abdelhaknezzari/testrunner",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "icon": "spaceship.png",
   "engines": {
     "vscode": "^1.79.0"
