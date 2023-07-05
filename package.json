@@ -1,0 +1,152 @@
+{
+  "name": "testrunner",
+  "displayName": "testRunner",
+  "publisher": "AbdelhakNEZZARI",
+  "description": "run tests from gherkin files",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.79.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:testRunner.runCurrentFeature",
+    "onCommand:testRunner.runCurrentScenario",
+    "workspaceContains:*.md"
+  ],
+  "browser": "./dist/web/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "when": "resourceLangId == feature",
+        "command": "testRunner.runCurrentScenario",
+        "title": "Run scenario",
+        "icon": {
+          "light": "assets/light/clipboard.svg",
+          "dark": "assets/dark/clipboard.svg"
+        }
+      },
+      {
+        "when": "resourceLangId == feature",
+        "command": "testRunner.runCurrentFeature",
+        "title": "Run feature",
+        "icon": {
+          "light": "assets/light/flower.svg",
+          "dark": "assets/dark/flower.svg"
+        }
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "command": "testRunner.runCurrentScenario",
+          "title": "Run scenario"
+        },
+        {
+          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "command": "testRunner.runCurrentFeature",
+          "title": "Run feature"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "command": "testRunner.runCurrentScenario",
+          "title": "Run scenario"
+        },
+        {
+          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "command": "testRunner.runCurrentFeature",
+          "title": "Run feature"
+        }
+      ],
+      "editor/title": [
+        {
+          "when": "!inQuickOpen && !inMenuBar && !inPanel && (resourceExtname == .feature || resourceExtname == .features)",
+          "command": "testRunner.runCurrentScenario",
+          "title": "Run scenario",
+          "group": "navigation@-1001"
+        },
+        {
+          "when": "!inQuickOpen && !inMenuBar && !inPanel && (resourceExtname == .feature || resourceExtname == .features)",
+          "command": "testRunner.runCurrentFeature",
+          "title": "Run feature",
+          "group": "navigation@-1002"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Step Definition Generator",
+      "properties": {
+        "testRunner.runner": {
+          "order": 1,
+          "type": "string",
+          "default": "cypress",
+          "enum": [
+            "cypress",
+            "playwright",
+            "cucumberjs"
+          ],
+          "description": "The testing framework used for step deinitions"
+        },
+        "testRunner.language": {
+          "order": 2,
+          "type": "string",
+          "default": "typescript",
+          "enum": [
+            "javascript",
+            "typescript"
+          ],
+          "description": "The programing language used for step deinitions"
+        },
+        "testRunner.arrow": {
+          "order": 3,
+          "type": "boolean",
+          "default": true,
+          "description": "Generate step definitions using either arrow or regular functions."
+        },
+        "testRunner.async": {
+          "order": 4,
+          "type": "boolean",
+          "default": false,
+          "description": "Generate step definitions using either async or sync functions."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
+    "pretest": "npm run compile-web",
+    "vscode:prepublish": "npm run package-web",
+    "compile-web": "webpack",
+    "watch-web": "webpack --watch",
+    "package-web": "webpack --mode production --devtool hidden-source-map",
+    "lint": "eslint src --ext ts",
+    "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. ."
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.1",
+    "@types/vscode": "^1.79.0",
+    "@types/webpack-env": "^1.18.1",
+    "@typescript-eslint/eslint-plugin": "^5.59.8",
+    "@typescript-eslint/parser": "^5.59.8",
+    "@vscode/test-web": "^0.0.44",
+    "assert": "^2.0.0",
+    "eslint": "^8.41.0",
+    "fs": "^0.0.1-security",
+    "mocha": "^10.2.0",
+    "process": "^0.11.10",
+    "read-file": "^0.2.0",
+    "ts-loader": "^9.4.3",
+    "typescript": "^5.1.3",
+    "webpack": "^5.85.0",
+    "webpack-cli": "^5.1.1",
+    "@types/node": "^20.3.3"
+  },
+  "dependencies": {
+
+    "save": "^2.9.0"
+  }
+}
