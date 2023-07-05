@@ -24,7 +24,7 @@ interface LaunchConfig {
 
 async function readLaunchJsonConfig(path: string) : Promise<LaunchConfig> {
 	const json = await workspace.openTextDocument(`${path}/.vscode/launch.json`);
-	const jsonAsString = json.getText();
+	const jsonAsString = json.getText().replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//gm, '');
 	return JSON.parse(jsonAsString).configurations.at(0) as LaunchConfig;
 }
 
@@ -45,7 +45,7 @@ async function runIntegrationTests(path: string, featureFile: string): Promise<v
 async function extractScenario(featureFilePath: string, scenarioLine: number): Promise<string> {
 	const document = await workspace.openTextDocument(featureFilePath);
 
-	const lines: String[] = document.getText().split("\n");
+	const lines: string[] = document.getText().split("\n");
 	const steps = lines.map((step, index) => { return { index, text: step }; });
 	const upperStep = steps.find(step => step.index > scenarioLine && step.text === '');
 
@@ -64,7 +64,6 @@ async function writeScenarioToFeatureFile(filePath: string, content: string): Pr
 export function activate(context: ExtensionContext) {
 	context.subscriptions.push(
 		commands.registerCommand('testRunner.runCurrentFeature', async (uri: Uri) => {
-			const lineNbr = window?.activeTextEditor?.selection?.active?.line;
 			const featureFilePath = uri.path;
 			const featureFile = featureFilePath.split('/features/').at(1)?.split("/").at(-1) as string;
 			await runIntegrationTests(featureFilePath.split('/features/').at(0) as string, featureFile);

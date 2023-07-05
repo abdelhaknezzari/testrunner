@@ -1,9 +1,11 @@
 {
   "name": "testrunner",
-  "displayName": "testRunner",
+  "displayName": "CDMtestRunner",
   "publisher": "AbdelhakNEZZARI",
   "description": "run tests from gherkin files",
-  "version": "0.0.1",
+  "repository": "https://github.com/abdelhaknezzari/testrunner",
+  "version": "0.0.3",
+  "icon": "spaceship.png",
   "engines": {
     "vscode": "^1.79.0"
   },
@@ -39,11 +41,6 @@
     ],
     "menus": {
       "explorer/context": [
-        {
-          "when": "resourceExtname == .feature || resourceExtname == .features",
-          "command": "testRunner.runCurrentScenario",
-          "title": "Run scenario"
-        },
         {
           "when": "resourceExtname == .feature || resourceExtname == .features",
           "command": "testRunner.runCurrentFeature",
