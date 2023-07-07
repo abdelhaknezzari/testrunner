@@ -1,9 +1,6 @@
 import { ExtensionContext, Uri, commands, window, workspace, debug } from 'vscode';
 
 
-//gu4w5qetlfiaxhlrrfbkuvj53ujsn7po5x23zuby2elaxhpcuivq
-
-
 interface LaunchConfig {
 		name: string,
 		type: string,
