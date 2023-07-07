@@ -47,7 +47,7 @@ async function extractScenario(featureFilePath: string, scenarioLine: number): P
 
 	const lines: string[] = document.getText().split("\n");
 	const steps = lines.map((step, index) => { return { index, text: step }; });
-	const upperStep = steps.find(step => step.index > scenarioLine && step.text === '');
+	const upperStep = steps.find(step => step.index > scenarioLine && ( step.text === '' || step.text === '\r'  ) );
 
 	return steps.filter(step => step.index >= scenarioLine && step.index <= (upperStep?.index as number))
 		.map(step => step.text)
