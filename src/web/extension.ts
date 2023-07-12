@@ -19,9 +19,18 @@ interface LaunchConfig {
 		}
 }
 
+function correctJson(json:string):string {
+	return json
+		.replace(/\/\/.*$/gm, '')
+		.replace(/\/\*[\s\S]*?\*\//gm, '')
+		.replace(/\s/g, '')
+		.replace(/\n/g, '')
+		.replace(/,(?=,|}|])/g, '');
+}
+
 async function readLaunchJsonConfig(path: string) : Promise<LaunchConfig> {
 	const json = await workspace.openTextDocument(`${path}/.vscode/launch.json`);
-	const jsonAsString = json.getText().replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//gm, '');
+	const jsonAsString = correctJson(json.getText());
 	return JSON.parse(jsonAsString).configurations.at(0) as LaunchConfig;
 }
 
@@ -80,6 +89,7 @@ export function activate(context: ExtensionContext) {
 		})
 	);
 }
+
 
 export function deactivate() {
 	window.showInformationMessage('[Cucumber Step Definition Generator] Goodbye.');
