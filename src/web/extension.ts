@@ -1,33 +1,29 @@
 import { ExtensionContext, Uri, commands, window, workspace, debug, FileType } from 'vscode';
-import axios, { AxiosResponse } from 'axios';
+import { getFailedScenarios, FailedScenario } from './githubAPI';
+import * as Path from 'path';
 
 
 
-const getCurrentBranchName = async (folder:string):Promise<String> => {
+const getCurrentBranchName = async (folder: string): Promise<string> => {
 	const gitHeader = `${folder}/.git/HEAD`;
 	const file = await workspace.openTextDocument(gitHeader);
 	file.getText();
 	return file.getText().trim().split('/heads/').at(-1) as string;
 }
 
-const pingGit =  async (token:string)=> {
-	const url = 'https://github.tools.sap/api/v3/repos/CALMBuild/cdm-features-ui/pulls?state=open';
-	const response = await axios.get(url, {
-		headers: {
-		  Authorization: `Bearer ${token}`,
-		  "Content-Type": "application/json",
-		}
-	  });
-	  return response;
-} 
-
 
 interface GherkinTokens {
 	path: string,
 	file: string,
+	featureName: string,
 	scenario: string,
 	step: string,
 	token: string
+}
+
+interface FeatureFolder {
+	name: string,
+	path: string
 }
 
 
@@ -46,13 +42,17 @@ interface LaunchConfig {
 		YOUR_OS: string,
 		ABSOLUTE_PATH_TO_BACKEND: string,
 		CHROME_MODE: string,
-		GIT_TOKEN?:string
+		GIT_TOKEN?: string,
+		REPO_URL?: string
 	}
 }
 
 function correctJson(json: string): string {
 	return json
-		.replace(/\/\/.*$/gm, '')
+		//  Remove comments
+		.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '')
+		// but keep http::// urls
+		.replace(/"http:\/\/[^"]+"/g, (match) => match.replace(/\/\//g, '\\/\\/'))
 		.replace(/\/\*[\s\S]*?\*\//gm, '')
 		.replace(/\s/g, '')
 		.replace(/\n/g, '')
@@ -73,7 +73,7 @@ async function getLaunchConfig(path: string, featureFile: string): Promise<Launc
 }
 
 
-async function runIntegrationTests(conf:LaunchConfig): Promise<void> {
+async function runIntegrationTests(conf: LaunchConfig): Promise<void> {
 	debug.startDebugging(undefined, conf);
 }
 
@@ -90,6 +90,18 @@ async function extractScenario(featureFilePath: string, scenarioLine: number): P
 		.join("\n");
 }
 
+function extractScenarios(failedScenarios: FailedScenario[], steps: GherkinTokens[]): string {
+	let scenariosText = "";
+	for (const scenario of failedScenarios) {
+		const stepsOfScenario = steps.filter(step => step.featureName === scenario.feature && step.scenario === scenario.scenario)
+			.map(step => step.step)
+			.join("\n");
+		scenariosText = scenariosText.concat(stepsOfScenario).concat("\n");
+	}
+
+	return scenariosText;
+}
+
 async function writeScenarioToFeatureFile(filePath: string, content: string): Promise<void> {
 	const uri = Uri.file(filePath);
 	const encoder = new TextEncoder();
@@ -97,23 +109,43 @@ async function writeScenarioToFeatureFile(filePath: string, content: string): Pr
 	await workspace.fs.writeFile(uri, data);
 }
 
+async function readFolders(path: string): Promise<string[]> {
 
-async function readFeatureFiles(path: string): Promise<string[]> {
+	const featureFolders: string[] = [];
+	featureFolders.push(path);
+	const entries = await workspace.fs.readDirectory(Uri.file(path));
+
+	const subfolderUris: Uri[] = entries.filter(entry => entry[1] === FileType.Directory)
+		.map(entry => Uri.joinPath(Uri.file(path), entry[0]));
+
+	for (const folder of subfolderUris) {
+		const subFolders = await readFolders(folder.path);
+		featureFolders.push(...subFolders);
+	}
+
+	return featureFolders;
+}
+
+
+async function readFeatureFiles(path: string): Promise<FeatureFolder[]> {
 	try {
-		const entries = await workspace.fs.readDirectory(Uri.file(path));
-		const featureFiles: string[] = entries.filter(entry => entry[1] === FileType.File && entry[0].endsWith('.feature'))
-			.map(entry => path.concat('/').concat(entry[0]));
+		const folders = await readFolders(path);
+		const featureFiles: FeatureFolder[] = [];
 
-		const subfolderUris: Uri[] = entries.filter(entry => entry[1] === FileType.Directory)
-			.map(entry => Uri.joinPath(Uri.file(path), entry[0]));
-
-
-		for (const uri of subfolderUris) {
-			const files = await workspace.fs.readDirectory(uri);
+		for (const folder of folders) {
+			const files = await workspace.fs.readDirectory(Uri.file(folder));
 			const otherFiles = files.filter(entry => entry[1] === FileType.File && entry[0].endsWith('.feature'))
-				.map(entry => uri.path.concat('/').concat(entry[0]));
+				.map(entry => {
+					return {
+						path: folder.concat('/').concat(entry[0]),
+						name: entry[0]
+					};
+				}
+				);
 			featureFiles.push(...otherFiles);
+
 		}
+
 		return featureFiles;
 	} catch (error) {
 		console.error('Error reading subfolders:', error);
@@ -121,37 +153,33 @@ async function readFeatureFiles(path: string): Promise<string[]> {
 	return [];
 }
 
-async function readFeatureTkens(files: string[]): Promise<GherkinTokens[]> {
+async function readFeatureSteps(files: FeatureFolder[]): Promise<GherkinTokens[]> {
 	let gherkinSteps: GherkinTokens[] = [];
 	for (const file of files) {
-		let gherkin: GherkinTokens = {
-			path: '',
-			file: '',
-			scenario: '',
-			step: '',
-			token: ''
-		};
-		const document = await workspace.openTextDocument(file);
-		const lines: string[] = document.getText().split("\n");
-		gherkin.path = file;
 
+		const document = await workspace.openTextDocument(file.path);
+		const lines: string[] = document.getText().split("\n");
+
+		let scenario = "";
 		for (const line of lines) {
-			let scenario = '';
-			if (line.trimStart().startsWith('Scenario:')) {
-				scenario = line;
+			let step = line.trim();
+
+			if (step.startsWith('Scenario:') || step.startsWith('Scenario Outline:')) {
+				scenario = step.replace("Scenario Outline:", "").replace("Scenario:", "").trim();
 			}
-			gherkin.step = line;
-			gherkin.scenario = scenario;
-			gherkinSteps.push(gherkin);
+			const scn = scenario;
+			gherkinSteps.push({
+				path: file.path,
+				featureName: file.name,
+				step: step,
+				scenario: scn,
+				file: '',
+				token: ''
+			});
 		}
 	}
 	return gherkinSteps;
 }
-
-
-
-
-
 
 export function activate(context: ExtensionContext) {
 	context.subscriptions.push(
@@ -167,19 +195,40 @@ export function activate(context: ExtensionContext) {
 		commands.registerCommand('testRunner.runCurrentScenario', async (uri: Uri) => {
 			const lineNbr = window?.activeTextEditor?.selection?.active?.line as number;
 			const featureFilePath = uri.path;
-			//'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' 
+
 			const testFeatureFile = featureFilePath.split('/features/').at(0)?.concat('/features/Testing.feature') as string;
 			const scenarioText = await extractScenario(featureFilePath, lineNbr);
 			const conf = await getLaunchConfig(featureFilePath.split('/features/').at(0) as string, 'Testing.feature');
 
-			const currentBranchName = await getCurrentBranchName(featureFilePath.split('/features/').at(0) as string);
-			const pingRes = await pingGit( conf.env.GIT_TOKEN as string);
-
-			const featureFiles = await readFeatureFiles(featureFilePath.split('/features/').at(0)?.concat('/features') as string);
-			const steps = await readFeatureTkens(featureFiles);
-
 			await writeScenarioToFeatureFile(testFeatureFile, 'Feature: testing\n'.concat('\n').concat(scenarioText));
-				await runIntegrationTests(conf);
+			await runIntegrationTests(conf);
+		})
+	);
+
+	context.subscriptions.push(
+		commands.registerCommand('testRunner.runPullReqestFailingScenarios', async (uri: Uri) => {
+			const lineNbr = window?.activeTextEditor?.selection?.active?.line as number;
+			const featureFilePath = uri.path;
+			const testFeatureFile = featureFilePath.split('/features/').at(0)?.concat('/features/Testing.feature') as string;
+
+			const conf = await getLaunchConfig(featureFilePath.split('/features/').at(0) as string, 'Testing.feature');
+
+
+			const currentBranchName = await getCurrentBranchName(featureFilePath.split('/features/').at(0) as string);
+			const failedScenarios = await getFailedScenarios(currentBranchName, conf.env.REPO_URL as string, conf.env.GIT_TOKEN as string);
+
+			let featureFiles = await readFeatureFiles(featureFilePath.split('/features/').at(0)?.concat('/features') as string);
+			const failedFeatures = failedScenarios.map(scn => scn.feature);
+
+			featureFiles = featureFiles.filter(feature => failedFeatures.indexOf(feature.name) !== -1);
+
+			const steps = await readFeatureSteps(featureFiles);
+
+
+			const scenariosText = extractScenarios(failedScenarios, steps);
+
+			await writeScenarioToFeatureFile(testFeatureFile, 'Feature: testing\n'.concat('\n').concat(scenariosText));
+			await runIntegrationTests(conf);
 		})
 	);
 }

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-interface FailedScenario {
+export interface FailedScenario {
     feature: string;
     scenario: string;
 }
@@ -19,17 +19,17 @@ interface GithubAPIData {
 }
 
 // Requires environment variable: GITHUB_TOKEN (requires repository scopes)
-export async function getFailedScenarios(branchName: string, repositoryApiUrl: string) {
+export async function getFailedScenarios(branchName: string, repositoryApiUrl: string,token:string):Promise<FailedScenario[]> {
     console.log("Retrieving failed scenarios for branch" + branchName);
 
 
-    const branchId = await getBranchIdFromName(branchName, repositoryApiUrl);
+    const branchId = await getBranchIdFromName(branchName, repositoryApiUrl,token);
     if (branchId === -1) {
         console.error(`Branch ${branchName} with url ${repositoryApiUrl} could not be found!`);
         process.exit(1);
     }
 
-    const comments = await getCommentsForBranch(repositoryApiUrl, branchId);
+    const comments = await getCommentsForBranch(repositoryApiUrl, branchId,token);
     const pipelineReportComments = await commentsShouldStartWith("## Pipeline Report", comments);
     const pipelineReportString = pipelineReportComments[0].body;
 
@@ -57,20 +57,21 @@ export async function getFailedScenarios(branchName: string, repositoryApiUrl: s
 
 }
 
-async function getBranchIdFromName(branchName: string, repositoryUrl: string): Promise<number> {
-    const url = `${repositoryUrl}/pulls?state=open`;
 
-    const response = await axios.get(url, {
-        headers: {
-            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-            "Content-Type": "application/json",
-        }
-    }).then((response) => {
-        return response;
-    }).catch((error) => {
-        console.error(`Request was not successful: ${error}`);
-        return -1;
-    });
+const getOpenPullRequests =  async (baseUrl:string,token:string)=> {
+	const url = `${baseUrl}/pulls?state=open`;
+	const response = await axios.get(url, {
+		headers: {
+		  Authorization: `Bearer ${token}`,
+		  "Content-Type": "application/json",
+		}
+	  });
+	  return response;
+} 
+
+
+async function getBranchIdFromName(branchName: string, repositoryUrl: string,token:string): Promise<number> {
+    const response = await getOpenPullRequests(repositoryUrl,token);
 
     const resultList = (response as GithubApiResult).data;
     const branch = resultList.filter((result) => result.head.ref === branchName);
@@ -83,21 +84,15 @@ async function getBranchIdFromName(branchName: string, repositoryUrl: string): P
     return branchId;
 }
 
-async function getCommentsForBranch(repositoryUrl: string, branchId: number): Promise<GithubAPIData[]> {
+async function getCommentsForBranch(repositoryUrl: string, branchId: number,token:string): Promise<GithubAPIData[]> {
     const url = `${repositoryUrl}/issues/${branchId}/comments`;
     // ## Pipeline Report
     const response = await axios.get(url, {
         headers: {
-            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
         }
-    }).then((response) => {
-        return response;
-    }).catch((error) => {
-        console.error(`Request was not successful: ${error}`);
-        return -1;
     });
-
     return (response as GithubApiResult).data;
 }
 

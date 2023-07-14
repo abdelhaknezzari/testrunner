@@ -37,6 +37,15 @@
           "light": "assets/light/flower.svg",
           "dark": "assets/dark/flower.svg"
         }
+      },
+      {
+        "when": "resourceLangId == feature",
+        "command": "testRunner.runPullReqestFailingScenarios",
+        "title": "Run failing scenarios of Pull Request",
+        "icon": {
+          "light": "assets/light/flower.svg",
+          "dark": "assets/dark/flower.svg"
+        }
       }
     ],
     "menus": {
@@ -45,6 +54,11 @@
           "when": "resourceExtname == .feature || resourceExtname == .features",
           "command": "testRunner.runCurrentFeature",
           "title": "Run feature"
+        },
+        {
+          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "command": "testRunner.runPullReqestFailingScenarios",
+          "title": "Run failing scenarios of Pull Request"
         }
       ],
       "editor/context": [
@@ -57,6 +71,11 @@
           "when": "resourceExtname == .feature || resourceExtname == .features",
           "command": "testRunner.runCurrentFeature",
           "title": "Run feature"
+        },
+        {
+          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "command": "testRunner.runPullReqestFailingScenarios",
+          "title": "Run failing scenarios of Pull Request"
         }
       ],
       "editor/title": [
@@ -71,6 +90,12 @@
           "command": "testRunner.runCurrentFeature",
           "title": "Run feature",
           "group": "navigation@-1002"
+        },
+        {
+          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "command": "testRunner.runPullReqestFailingScenarios",
+          "title": "Run failing scenarios of Pull Request",
+          "group": "navigation@-1003"
         }
       ]
     },
