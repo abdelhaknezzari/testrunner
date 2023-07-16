@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { workspace } from 'vscode';
+import Config from './Config';
 
 export interface FailedScenario {
     feature: string;
@@ -18,10 +20,17 @@ interface GithubAPIData {
 
 }
 
-// Requires environment variable: GITHUB_TOKEN (requires repository scopes)
-export async function getFailedScenarios(branchName: string, repositoryApiUrl: string,token:string):Promise<FailedScenario[]> {
-    console.log("Retrieving failed scenarios for branch" + branchName);
+export async function getCurrentBranchName(path: string): Promise<string> {
+	const gitHeader = `${Config.getRoot(path)}/.git/HEAD`;
+	const file = await workspace.openTextDocument(gitHeader);
+	file.getText();
+	return file.getText().trim().split('/heads/').at(-1) as string;
+}
 
+// Requires environment variable: GITHUB_TOKEN (requires repository scopes)
+export async function getFailedScenarios(path: string, repositoryApiUrl: string,token:string):Promise<FailedScenario[]> {
+    const branchName = await getCurrentBranchName(path);
+    console.log("Retrieving failed scenarios for branch" + branchName);
 
     const branchId = await getBranchIdFromName(branchName, repositoryApiUrl,token);
     if (branchId === -1) {
