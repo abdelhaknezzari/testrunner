@@ -113,7 +113,7 @@ class Feature {
     async getScenarioName(uri: Uri, lineNbr: number) {
         const steps = await this.getSteps(uri.path);
         const scenario = this.getStepByLine(steps, lineNbr);
-        const scenarioName = scenario?.text.trim().replace("Scenario:", "").replace("Outline Scenario:", "").trim() as string;
+        const scenarioName = scenario?.text.trim().replace("Scenario:", "").replace("Scenario Outline:", "").trim() as string;
         return scenarioName;
     }
 
@@ -165,6 +165,10 @@ class Feature {
             }
         }
         return gherkinSteps;
+    }
+
+    getCurrentLine( ):string {
+        return " ";
     }
 
 

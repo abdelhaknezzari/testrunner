@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { workspace } from 'vscode';
 import Config from './Config';
+import channel from './Channel';
 
 export interface FailedScenario {
     feature: string;
@@ -34,12 +35,12 @@ export async function getFailedScenarios(path: string, repositoryApiUrl: string,
 
     const branchId = await getBranchIdFromName(branchName, repositoryApiUrl,token);
     if (branchId === -1) {
-        console.error(`Branch ${branchName} with url ${repositoryApiUrl} could not be found!`);
+        channel.error(`Branch ${branchName} with url ${repositoryApiUrl} could not be found!`);
         process.exit(1);
     }
 
     const comments = await getCommentsForBranch(repositoryApiUrl, branchId,token);
-    const pipelineReportComments = await commentsShouldStartWith("## Pipeline Report", comments);
+    const pipelineReportComments = await commentsShouldStartWith("## Pipeline Report", comments as GithubAPIData[]);
     const pipelineReportString = pipelineReportComments[0].body;
 
     const scenarios = splitByScenario(pipelineReportString);
@@ -67,42 +68,50 @@ export async function getFailedScenarios(path: string, repositoryApiUrl: string,
 }
 
 
-const getOpenPullRequests =  async (baseUrl:string,token:string)=> {
-	const url = `${baseUrl}/pulls?state=open`;
-	const response = await axios.get(url, {
-		headers: {
-		  Authorization: `Bearer ${token}`,
-		  "Content-Type": "application/json",
-		}
-	  });
-	  return response;
+const getOpenPullRequests =  async (baseUrl:string,token:string):Promise<GithubApiResult|undefined>=> {
+      try{
+        const url = `${baseUrl}/pulls?state=open`;
+        const response = await axios.get(url, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            }
+          });
+          return response;
+    } catch(error){
+        channel.error(error as string);
+    }
 } 
 
 
 async function getBranchIdFromName(branchName: string, repositoryUrl: string,token:string): Promise<number> {
     const response = await getOpenPullRequests(repositoryUrl,token);
 
-    const resultList = (response as GithubApiResult).data;
+    const resultList = (response as GithubApiResult)?.data;
     const branch = resultList.filter((result) => result.head.ref === branchName);
     if (branch.length === 0) {
-        console.error(`No branch found for ${branchName}`);
+        channel.error(`No branch found for ${branchName}`);
         return -1;
     }
     const branchId = branch[0].number;
-    console.log(`Branch id found: ${branchId}`);
+    channel.message(`Branch id found: ${branchId}`);
     return branchId;
 }
 
-async function getCommentsForBranch(repositoryUrl: string, branchId: number,token:string): Promise<GithubAPIData[]> {
+async function getCommentsForBranch(repositoryUrl: string, branchId: number,token:string): Promise<GithubAPIData[]|undefined> {
     const url = `${repositoryUrl}/issues/${branchId}/comments`;
     // ## Pipeline Report
-    const response = await axios.get(url, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-        }
-    });
-    return (response as GithubApiResult).data;
+    try{
+        const response = await axios.get(url, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            }
+        });
+        return (response as GithubApiResult).data;
+    } catch(error){
+        channel.error(error as string);
+    }
 }
 
 async function commentsShouldStartWith(filterCriteria: string, comments: GithubAPIData[]): Promise<GithubAPIData[]> {

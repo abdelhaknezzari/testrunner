@@ -1,12 +1,12 @@
-import { ExtensionContext, Uri, commands, window} from 'vscode';
+import { CancellationToken, CompletionItem, CompletionItemProvider, CompletionList, ExtensionContext, Position, ProviderResult, TextDocument, Uri, commands, languages, window } from 'vscode';
 import testRunner from './Runner';
 import channel from './Channel';
-
+import completer from './Completer';
 
 export function activate(context: ExtensionContext) {
 	context.subscriptions.push(
 		commands.registerCommand('testRunner.runCurrentFeature', async (uri: Uri) => {
-          await testRunner.runFeature(uri);
+			await testRunner.runFeature(uri);
 		})
 	);
 
@@ -21,9 +21,20 @@ export function activate(context: ExtensionContext) {
 			await testRunner.runPullRequest(uri);
 		})
 	);
+
+
+	// context.subscriptions.push(
+	// 	languages.registerCompletionItemProvider(
+	// 	  { pattern: '**/*.feature' },
+	// 	  completer,
+	// 	  ' ' 
+	// 	)
+	//   );
+
+
 }
 
 export function deactivate() {
 	window.showInformationMessage('[CDM Test Runner] Goodbye.');
-    channel.message("[CDM Test Runner] Goodbye.");
+	channel.message("[CDM Test Runner] Goodbye.");
 }

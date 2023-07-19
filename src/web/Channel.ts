@@ -1,4 +1,5 @@
 import { OutputChannel, window } from "vscode";
+import  chalk from "chalk";
 
 class Channel {
     outputChannel: OutputChannel;
@@ -10,9 +11,18 @@ class Channel {
     }
 
     message(text: string): void {
+        console.log(text);
         this.outputChannel.appendLine(text);
         this.outputChannel.show();
     }
+    error(errorMessage: string): void {
+        console.error(errorMessage);
+        this.outputChannel.appendLine(chalk.red(errorMessage));
+        this.outputChannel.show();
+        window.showErrorMessage(errorMessage);
+        
+    }
+
 }
 
 const channel = new Channel();

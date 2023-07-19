@@ -39,7 +39,18 @@ class TestRunner {
     async runPullRequest(uri: Uri) {
         const conf = await config.getLaunchConfig(uri.path, 'Testing.feature');
         if (!conf) {
-            channel.message(`Empty configuration: wrong launch.json`);
+            channel.error(`Empty configuration: wrong launch.json`);
+            return;
+        }
+
+        if (!conf.env.GIT_TOKEN) {
+            channel.error(`Empty Git Token: wrong env.GIT_TOKEN in launch.json`);
+            return;
+        }
+
+        if (!conf.env.REPO_URL) {
+            channel.error(`Empty Repository URL: wrong env.REPO_URL in launch.json`);
+ 
             return;
         }
 
