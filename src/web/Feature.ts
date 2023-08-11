@@ -18,6 +18,28 @@ class Feature {
         await this.writeScenarioToFeatureFile(testFeatureFile, 'Feature: testing\n'.concat('\n').concat(scenarioText));
     }
 
+    async createScenariosAfter(uri: Uri, lineNbr: number) {
+        const testFeatureFile = this.getRoot(uri.path).concat('/features/Testing.feature');
+        const steps = (await feature.readFeatureSteps([{ name: this.getFeature(uri.path), path: uri.path }]))
+
+        const stepsText = steps.filter(step => step.lineNbr !== undefined &&
+            step.lineNbr >= lineNbr)
+            .map(step => step.step).join("\n");
+
+        await this.writeScenarioToFeatureFile(testFeatureFile, 'Feature: testing\n'.concat('\n').concat(stepsText));
+    }
+
+    async createScenariosBefore(uri: Uri, lineNbr: number) {
+        const testFeatureFile = this.getRoot(uri.path).concat('/features/Testing.feature');
+        const steps = (await feature.readFeatureSteps([{ name: this.getFeature(uri.path), path: uri.path }]))
+
+        const stepsText = steps.filter(step => step.lineNbr !== undefined &&
+            step.lineNbr <= lineNbr)
+            .map(step => step.step).join("\n");
+        await this.writeScenarioToFeatureFile(testFeatureFile, 'Feature: testing\n'.concat('\n').concat(stepsText));
+    }
+
+
     async extractScenario(featureFilePath: string, scenarioLine: number): Promise<string> {
         const steps = await this.getSteps(featureFilePath);
 
@@ -150,7 +172,9 @@ class Feature {
             const lines: string[] = document.getText().split("\n");
 
             let scenario = "";
+            let lineNbr = 0;
             for (const line of lines) {
+                lineNbr++;
                 let step = line.trim();
 
                 if (step.startsWith('@') || step.startsWith('#')) {
@@ -167,6 +191,7 @@ class Feature {
                     path: file.path,
                     featureName: file.name,
                     step: step,
+                    lineNbr,
                     scenario: scn,
                     file: '',
                     token: ''

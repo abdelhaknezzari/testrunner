@@ -22,6 +22,19 @@ export function activate(context: ExtensionContext) {
 		})
 	);
 
+	context.subscriptions.push(
+		commands.registerCommand('testRunner.runScenariosAfterwards', async (uri: Uri) => {
+			await testRunner.runAfter(uri);
+		})
+	);
+
+	context.subscriptions.push(
+		commands.registerCommand('testRunner.runPreviousScenarios', async (uri: Uri) => {
+			await testRunner.runBefore(uri);
+		})
+	);
+
+
 
 	// context.subscriptions.push(
 	// 	languages.registerCompletionItemProvider(

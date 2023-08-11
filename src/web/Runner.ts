@@ -64,6 +64,30 @@ class TestRunner {
 
         await this.runIntegrationTests(conf);
     }
+
+    async runAfter(uri: Uri) {
+        const lineNbr = window?.activeTextEditor?.selection?.active?.line as number;
+
+        await feature.createScenariosAfter(uri, lineNbr);
+        channel.message(`Create Scenarios Afterwards in Testing.feature`);
+
+        channel.message(`Read configuration`);
+        const conf = await config.getLaunchConfig(uri.path, 'Testing.feature');
+   
+        await this.runIntegrationTests(conf);
+    }
+
+    async runBefore(uri: Uri) {
+        const lineNbr = window?.activeTextEditor?.selection?.active?.line as number;
+
+        await feature.createScenariosBefore(uri, lineNbr);
+        channel.message(`Create Scenarios Before in Testing.feature`);
+
+        channel.message(`Read configuration`);
+        const conf = await config.getLaunchConfig(uri.path, 'Testing.feature');
+   
+        await this.runIntegrationTests(conf);
+    }
 }
 
 const testRunner = new TestRunner();

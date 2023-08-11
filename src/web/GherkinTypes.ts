@@ -9,6 +9,7 @@ export interface GherkinStepToken {
 	featureName: string,
 	scenario: string,
 	step: string,
+	lineNbr?:int,
 	token: string,
 	hit?:int,
 }

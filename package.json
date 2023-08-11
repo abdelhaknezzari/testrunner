@@ -4,7 +4,7 @@
   "publisher": "AbdelhakNEZZARI",
   "description": "run tests from gherkin files",
   "repository": "https://github.com/abdelhaknezzari/testrunner",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "icon": "spaceship.png",
   "engines": {
     "vscode": "^1.79.0"
@@ -15,6 +15,7 @@
   "activationEvents": [
     "onCommand:testRunner.runCurrentFeature",
     "onCommand:testRunner.runCurrentScenario",
+    "onCommand:testRunner.runScenariosAfterwards",
     "workspaceContains:*.md"
   ],
   "browser": "./dist/web/extension.js",
@@ -23,30 +24,24 @@
       {
         "when": "resourceLangId == feature",
         "command": "testRunner.runCurrentScenario",
-        "title": "Run scenario",
-        "icon": {
-          "light": "assets/light/clipboard.svg",
-          "dark": "assets/dark/clipboard.svg"
-        }
+        "title": "Run scenario"
       },
       {
         "when": "resourceLangId == feature",
         "command": "testRunner.runCurrentFeature",
-        "title": "Run feature",
-        "icon": {
-          "light": "assets/light/flower.svg",
-          "dark": "assets/dark/flower.svg"
-        }
+        "title": "Run feature"
       },
       {
         "when": "resourceLangId == feature",
         "command": "testRunner.runPullReqestFailingScenarios",
-        "title": "Run failing scenarios of Pull Request",
-        "icon": {
-          "light": "assets/light/flower.svg",
-          "dark": "assets/dark/flower.svg"
-        }
+        "title": "Run failing scenarios of Pull Request"
+      },
+      {
+        "when": "resourceLangId == feature",
+        "command": "testRunner.runScenariosAfterwards",
+        "title": "Run from current scenario"
       }
+
     ],
     "menus": {
       "explorer/context": [
@@ -76,6 +71,11 @@
           "when": "resourceExtname == .feature || resourceExtname == .features",
           "command": "testRunner.runPullReqestFailingScenarios",
           "title": "Run failing scenarios of Pull Request"
+        },
+        {
+          "when": "resourceLangId == feature",
+          "command": "testRunner.runScenariosAfterwards",
+          "title": "Run from current scenario"
         }
       ],
       "editor/title": [
@@ -96,6 +96,12 @@
           "command": "testRunner.runPullReqestFailingScenarios",
           "title": "Run failing scenarios of Pull Request",
           "group": "navigation@-1003"
+        },
+        {
+          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "command": "testRunner.runScenariosAfterwards",
+          "title": "Run from current scenario",
+          "group": "navigation@-1004"
         }
       ]
     },
