@@ -13,7 +13,7 @@ class Feature {
 
         const steps = await feature.readFeatureSteps([{ name: this.getFeature(uri.path), path: uri.path }]);
 
-        const scenarioText = feature.extractScenarios([{ feature: this.getFeature(uri.path), scenario: scenarioName }], steps);
+        const scenarioText = feature.extractScenarios([{ feature: this.getFeature(uri.path), scenario: scenarioName, line: lineNbr }], steps);
 
         await this.writeScenarioToFeatureFile(testFeatureFile, 'Feature: testing\n'.concat('\n').concat(scenarioText));
     }
@@ -28,8 +28,8 @@ class Feature {
             .join("\n");
     }
 
-     getStepByLine(steps: { index: number; text: string; }[], scenarioLine: number) {
-        return steps.find(step => step.index === scenarioLine );
+    getStepByLine(steps: { index: number; text: string; }[], scenarioLine: number) {
+        return steps.find(step => step.index === scenarioLine);
     }
 
     async getSteps(featureFilePath: string) {
@@ -43,9 +43,18 @@ class Feature {
     extractScenarios(failedScenarios: FailedScenario[], steps: GherkinStepToken[]): string {
         let scenariosText = "";
         for (const scenario of failedScenarios) {
-            const stepsOfScenario = steps.filter(step => step.featureName === scenario.feature && step.scenario === scenario.scenario)
+            let stepsOfScenario = steps.filter(step => step.featureName === scenario.feature && step.scenario === scenario.scenario)
                 .map(step => step.step)
                 .join("\n");
+            if (stepsOfScenario === '') {
+                const stepsOfFeature = steps.filter(step => step.featureName === scenario.feature);
+                const scenarioName = stepsOfFeature.at(scenario.line);
+                if (scenarioName) {
+                    stepsOfScenario = steps.filter(step => step.featureName === scenario.feature && step.scenario === scenarioName.scenario)
+                        .map(step => step.step)
+                        .join("\n");
+                }
+            }
             scenariosText = scenariosText.concat(stepsOfScenario).concat("\n");
         }
 
@@ -102,11 +111,11 @@ class Feature {
         return [];
     }
 
-    getRoot(featureFilePath:string):string{
+    getRoot(featureFilePath: string): string {
         return featureFilePath.split('/features/').at(0) as string;
     }
 
-    getFeature(featureFilePath:string):string{
+    getFeature(featureFilePath: string): string {
         return featureFilePath.split('/features/').at(1)?.split("/").at(-1) as string;
     }
 
@@ -118,8 +127,8 @@ class Feature {
     }
 
 
-   async createFeature(uri: Uri, failedScenarios: FailedScenario[]) {
-        const testFeatureFile = this.getRoot( uri.path).concat('/features/Testing.feature');
+    async createFeature(uri: Uri, failedScenarios: FailedScenario[]) {
+        const testFeatureFile = this.getRoot(uri.path).concat('/features/Testing.feature');
         let featureFiles = await this.readFeatureFiles(this.getRoot(uri.path).concat('/features'));
         const failedFeatures = failedScenarios.map(scn => scn.feature);
 
@@ -167,7 +176,7 @@ class Feature {
         return gherkinSteps;
     }
 
-    getCurrentLine( ):string {
+    getCurrentLine(): string {
         return " ";
     }
 

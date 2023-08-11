@@ -6,6 +6,7 @@ import channel from './Channel';
 export interface FailedScenario {
     feature: string;
     scenario: string;
+    line:number;
 }
 
 interface GithubApiResult {
@@ -53,11 +54,14 @@ export async function getFailedScenarios(path: string, repositoryApiUrl: string,
             continue;
         }
 
+        const line = getScenarioLine(scenario);
+
         const featureName = getFeatureNameFrom(scenario);
 
         failedScenarios.push({
             feature: featureName,
-            scenario: scenarioName
+            scenario: scenarioName,
+            line
         });
 
     }
@@ -134,6 +138,17 @@ function getScenarioName(scenario: string): string {
         return scenarioName[1].trim();
     }
     return "";
+}
+
+function getScenarioLine(scenario: string): number {
+    return scenario.split("\n")
+        .filter(v => v.startsWith("|Scenario|"))
+        .at(0)
+        ?.trim()
+        ?.split("|")
+        ?.filter(v => v !== '')
+        ?.at(2)
+        ?.trim() as unknown as number;
 }
 
 function getFeatureNameFrom(scenario: string): string {
