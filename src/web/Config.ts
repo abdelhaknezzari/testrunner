@@ -17,7 +17,8 @@ export interface LaunchConfig {
         ABSOLUTE_PATH_TO_BACKEND: string,
         CHROME_MODE: string,
         GIT_TOKEN?: string,
-        REPO_URL?: string
+        REPO_URL?: string,
+        NEED_MOCK_SERVER?: string
     }
 }
 
@@ -49,12 +50,17 @@ class Config {
     }
     
     
-    async  getLaunchConfig(path: string,feature = ""): Promise<LaunchConfig|undefined> {
+    async  getLaunchConfig(path: string, feature = "", scenarioText = ""): Promise<LaunchConfig|undefined> {
         try {
             const root = this.getRoot(path); 
             const featureFile = feature === "" ? this.getFeature(path) : feature;
             const conf = await this.readLaunchJsonConfig(root);
             conf.args = ['./wdio.conf.js', '--spec', featureFile];
+            if(scenarioText.includes("mock service")){
+                conf.env.NEED_MOCK_SERVER = "true";
+            } else {
+                conf.env.NEED_MOCK_SERVER = "false";
+            }
             return conf;
         } catch(error) {
             channel.message(error as string);

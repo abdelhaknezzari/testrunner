@@ -6,7 +6,7 @@ import { FeatureFolder, GherkinStepToken } from "./GherkinTypes";
 
 class Feature {
 
-    async createScenario(uri: Uri, lineNbr: number) {
+    async createScenario(uri: Uri, lineNbr: number): Promise<string> {
         const testFeatureFile = this.getRoot(uri.path).concat('/features/Testing.feature');
 
         const scenarioName = await feature.getScenarioName(uri, lineNbr);
@@ -16,11 +16,13 @@ class Feature {
         const scenarioText = feature.extractScenarios([{ feature: this.getFeature(uri.path), scenario: scenarioName, line: lineNbr }], steps);
 
         await this.writeScenarioToFeatureFile(testFeatureFile, 'Feature: testing\n'.concat('\n').concat(scenarioText));
+
+        return scenarioText;
     }
 
     async createScenariosAfter(uri: Uri, lineNbr: number) {
         const testFeatureFile = this.getRoot(uri.path).concat('/features/Testing.feature');
-        const steps = (await feature.readFeatureSteps([{ name: this.getFeature(uri.path), path: uri.path }]))
+        const steps = (await feature.readFeatureSteps([{ name: this.getFeature(uri.path), path: uri.path }]));
 
         const stepsText = steps.filter(step => step.lineNbr !== undefined &&
             step.lineNbr >= lineNbr)
@@ -31,7 +33,7 @@ class Feature {
 
     async createScenariosBefore(uri: Uri, lineNbr: number) {
         const testFeatureFile = this.getRoot(uri.path).concat('/features/Testing.feature');
-        const steps = (await feature.readFeatureSteps([{ name: this.getFeature(uri.path), path: uri.path }]))
+        const steps = (await feature.readFeatureSteps([{ name: this.getFeature(uri.path), path: uri.path }]));
 
         const stepsText = steps.filter(step => step.lineNbr !== undefined &&
             step.lineNbr <= lineNbr)
