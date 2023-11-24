@@ -26,11 +26,11 @@ class TestRunner {
     async runScenario(uri: Uri) {
         const lineNbr = window?.activeTextEditor?.selection?.active?.line as number;
 
-        await feature.createScenario(uri, lineNbr);
+        const scenarioText = await feature.createScenario(uri, lineNbr);
         channel.message(`Create Scenario Testing.feature`);
 
         channel.message(`Read configuration`);
-        const conf = await config.getLaunchConfig(uri.path, 'Testing.feature');
+        const conf = await config.getLaunchConfig(uri.path, 'Testing.feature', scenarioText);
    
         await this.runIntegrationTests(conf);
     }
