@@ -50,7 +50,7 @@ class Search {
 
 
         interface GroupedData {
-            [key: string]: int;
+            [key: string]: number;
         }
 
 
@@ -62,7 +62,7 @@ class Search {
             if (!acc[key]) {
                 acc[key] = 0;
             }
-            acc[key] += item?.hit as int;
+            acc[key] += item?.hit as number;
             return acc;
         }, {});
 
