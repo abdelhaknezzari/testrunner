@@ -24,14 +24,15 @@ export interface LaunchConfig {
 
 class Config {
     getRoot(featureFilePath: string): string {
-        return featureFilePath.split('/features/').at(0) as string;
+        const rootPath = featureFilePath.split('/features/').at(0) as string;
+        return rootPath.includes('webapps') ? featureFilePath.split('/webapps/').at(0) as string : rootPath;
     }
 
     getFeature(featureFilePath: string): string {
         return featureFilePath.split('/features/').at(1)?.split("/").at(-1) as string;
     }
 
-     correctJson(json: string): string {
+    correctJson(json: string): string {
         return json
             //  Remove comments
             .replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '')
@@ -42,31 +43,35 @@ class Config {
             .replace(/\n/g, '')
             .replace(/,(?=,|}|])/g, '');
     }
-    
-    async  readLaunchJsonConfig(path: string): Promise<LaunchConfig> {
+
+    async readLaunchJsonConfig(path: string): Promise<LaunchConfig> {
         const json = await workspace.openTextDocument(`${path}/.vscode/launch.json`);
         const jsonAsString = this.correctJson(json.getText());
         return JSON.parse(jsonAsString).configurations.at(0) as LaunchConfig;
     }
-    
-    
-    async  getLaunchConfig(path: string, feature = "", scenarioText = ""): Promise<LaunchConfig|undefined> {
+
+
+    async getLaunchConfig(path: string, feature = "", scenarioText = ""): Promise<LaunchConfig | undefined> {
         try {
-            const root = this.getRoot(path); 
+            const root = this.getRoot(path);
             const featureFile = feature === "" ? this.getFeature(path) : feature;
             const conf = await this.readLaunchJsonConfig(root);
             conf.args = ['./wdio.conf.js', '--spec', featureFile];
-            if(scenarioText.includes("mock service")){
-                conf.env.NEED_MOCK_SERVER = "true";
-            } else {
-                conf.env.NEED_MOCK_SERVER = "false";
+            try {
+                if (scenarioText.includes("mock service")) {
+                    conf.env.NEED_MOCK_SERVER = "true";
+                } else {
+                    conf.env.NEED_MOCK_SERVER = "false";
+                }
+            } catch (error) {
+
             }
             return conf;
-        } catch(error) {
+        } catch (error) {
             channel.message(error as string);
         }
     }
-    
+
 }
 
 const config = new Config;
