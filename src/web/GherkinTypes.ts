@@ -12,4 +12,5 @@ export interface GherkinStepToken {
 	lineNbr?:number,
 	token: string,
 	hit?:number,
+	needPreviousScenarios?:boolean
 }

@@ -65,24 +65,33 @@ class Feature {
     }
 
     extractScenarios(failedScenarios: FailedScenario[], steps: GherkinStepToken[]): string {
+        debugger;
         let scenariosText = "";
+        const hasPrerequisites = steps.some(step => step.needPreviousScenarios);
+        const preRequisiteScenarios = hasPrerequisites ?
+            steps.filter(step => !step.needPreviousScenarios && !!step.scenario )
+                .map(step => step.step)
+                .join("\n")
+                .concat("\n") :
+            "";
+
         for (const scenario of failedScenarios) {
             let stepsOfScenario = steps.filter(step => step.featureName === scenario.feature && step.scenario === scenario.scenario)
                 .map(step => step.step)
-                .join("\n");
+                .join("\n")
+                .concat("\n");
             if (stepsOfScenario === '') {
                 const stepsOfFeature = steps.filter(step => step.featureName === scenario.feature);
                 const scenarioName = stepsOfFeature.at(scenario.line);
                 if (scenarioName) {
                     stepsOfScenario = steps.filter(step => step.featureName === scenario.feature && step.scenario === scenarioName.scenario)
                         .map(step => step.step)
-                        .join("\n");
+                        .join("\n").concat("\n");
                 }
             }
             scenariosText = scenariosText.concat(stepsOfScenario).concat("\n");
         }
-
-        return scenariosText;
+        return preRequisiteScenarios.concat("\n").concat("\n").concat(scenariosText);
     }
 
     async writeScenarioToFeatureFile(filePath: string, content: string): Promise<void> {
@@ -168,14 +177,18 @@ class Feature {
 
     async readFeatureSteps(files: FeatureFolder[]): Promise<GherkinStepToken[]> {
         let gherkinSteps: GherkinStepToken[] = [];
+        let lineIndex = 0;
         for (const file of files) {
 
             const document = await workspace.openTextDocument(file.path);
             const lines: string[] = document.getText().split("\n");
+            const linesFiltered: string[] = lines.map(line => line.trim())
+                .filter(step => !step.startsWith('@') && !step.startsWith('#') && step !== '');
 
             let scenario = "";
             let lineNbr = 0;
-            for (const line of lines) {
+            let needPreviousScenarios = false;
+            for (const line of linesFiltered) {
                 lineNbr++;
                 let step = line.trim();
 
@@ -183,9 +196,9 @@ class Feature {
                     continue;
                 }
 
-
                 if (step.startsWith('Scenario:') || step.startsWith('Scenario Outline:')) {
                     scenario = step.replace("Scenario Outline:", "").replace("Scenario:", "").trim();
+                    needPreviousScenarios = linesFiltered[(lineIndex + 1)].includes("the previous scenario was tested successfully");
                 }
 
                 const scn = scenario;
@@ -195,9 +208,11 @@ class Feature {
                     step: step,
                     lineNbr,
                     scenario: scn,
+                    needPreviousScenarios: needPreviousScenarios,
                     file: '',
                     token: ''
                 });
+                lineIndex++;
             }
         }
         return gherkinSteps;
