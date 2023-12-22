@@ -9,6 +9,14 @@ class Clipboard {
         }
     }
 
+    async copyString(txt: string) {
+        try {
+            await env.clipboard.writeText(txt);
+        } catch (error) {
+            window.showErrorMessage('Failed to copy text to clipboard: ' + error);
+        }
+    }
+
 }
 
 const clipboard = new Clipboard();

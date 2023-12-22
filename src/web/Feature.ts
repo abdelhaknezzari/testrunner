@@ -1,6 +1,7 @@
 import { FileType, Uri, workspace } from "vscode";
 import { FailedScenario } from "./githubAPI";
 import { FeatureFolder, GherkinStepToken } from "./GherkinTypes";
+import clipboard from "./Clipboard";
 
 
 
@@ -65,15 +66,7 @@ class Feature {
     }
 
     extractScenarios(failedScenarios: FailedScenario[], steps: GherkinStepToken[]): string {
-        debugger;
         let scenariosText = "";
-        const hasPrerequisites = steps.some(step => step.needPreviousScenarios);
-        const preRequisiteScenarios = hasPrerequisites ?
-            steps.filter(step => !step.needPreviousScenarios && !!step.scenario )
-                .map(step => step.step)
-                .join("\n")
-                .concat("\n") :
-            "";
 
         for (const scenario of failedScenarios) {
             let stepsOfScenario = steps.filter(step => step.featureName === scenario.feature && step.scenario === scenario.scenario)
@@ -91,7 +84,7 @@ class Feature {
             }
             scenariosText = scenariosText.concat(stepsOfScenario).concat("\n");
         }
-        return preRequisiteScenarios.concat("\n").concat("\n").concat(scenariosText);
+        return scenariosText;
     }
 
     async writeScenarioToFeatureFile(filePath: string, content: string): Promise<void> {
@@ -174,21 +167,64 @@ class Feature {
         await this.writeScenarioToFeatureFile(testFeatureFile, 'Feature: testing\n'.concat('\n').concat(scenariosText));
     }
 
+    extractTillFailedScenario(steps: GherkinStepToken[], failedScenarios: FailedScenario[]): string {
+        let scenariosTillFailedOne = "";
+
+        for (const scenario of failedScenarios) {
+            const previousScenarios = steps.filter(step => step.lineNbr !== undefined &&
+                step.lineNbr <= scenario.line &&
+                step.featureName === scenario.feature &&
+                step.scenario !== '' &&
+                step.scenario !== scenario.scenario)
+                .map(step => step.step)
+                .join("\n")
+                .concat("\n");
+
+            const failedScenario = this.extractScenarios([scenario], steps).concat("\n");
+            scenariosTillFailedOne = scenariosTillFailedOne.concat("\n")
+                .concat(previousScenarios.concat(failedScenario));
+        }
+        return scenariosTillFailedOne;
+    }
+
+    async createFailedFeatures(uri: Uri, failedScenarios: FailedScenario[]) {
+        const testFeatureFile = this.getRoot(uri.path).concat('/features/Testing.feature');
+        const failedFeatures = failedScenarios.map(scn => scn.feature);
+        let featureFiles = await this.readFeatureFiles(this.getRoot(uri.path).concat('/features'));
+        featureFiles = featureFiles.filter(feature => failedFeatures.indexOf(feature.name) !== -1);
+
+        const steps = await this.readFeatureSteps(featureFiles);
+        const failedFeatureTxt = steps.filter(step => step.lineNbr !== undefined &&
+            step.scenario !== '')
+            .map(step => step.step)
+            .join("\n")
+            .concat("\n");
+        await this.writeScenarioToFeatureFile(testFeatureFile, 'Feature: testing\n'.concat('\n').concat(failedFeatureTxt));
+    }
+
+
+    async createFailedFeaturesTillFailedScenarios(uri: Uri, failedScenarios: FailedScenario[]) {
+        const testFeatureFile = this.getRoot(uri.path).concat('/features/Testing.feature');
+        const failedFeatures = failedScenarios.map(scn => scn.feature);
+        let featureFiles = await this.readFeatureFiles(this.getRoot(uri.path).concat('/features'));
+        featureFiles = featureFiles.filter(feature => failedFeatures.indexOf(feature.name) !== -1);
+
+        const steps = await this.readFeatureSteps(featureFiles);
+        const failedFeaturesTxt = this.extractTillFailedScenario(steps,failedScenarios);
+        await this.writeScenarioToFeatureFile(testFeatureFile, 'Feature: testing\n'.concat('\n').concat(failedFeaturesTxt));
+    }
 
     async readFeatureSteps(files: FeatureFolder[]): Promise<GherkinStepToken[]> {
         let gherkinSteps: GherkinStepToken[] = [];
-        let lineIndex = 0;
+
         for (const file of files) {
 
             const document = await workspace.openTextDocument(file.path);
             const lines: string[] = document.getText().split("\n");
-            const linesFiltered: string[] = lines.map(line => line.trim())
-                .filter(step => !step.startsWith('@') && !step.startsWith('#') && step !== '');
 
             let scenario = "";
             let lineNbr = 0;
-            let needPreviousScenarios = false;
-            for (const line of linesFiltered) {
+            for (const line of lines) {
                 lineNbr++;
                 let step = line.trim();
 
@@ -198,7 +234,6 @@ class Feature {
 
                 if (step.startsWith('Scenario:') || step.startsWith('Scenario Outline:')) {
                     scenario = step.replace("Scenario Outline:", "").replace("Scenario:", "").trim();
-                    needPreviousScenarios = linesFiltered[(lineIndex + 1)].includes("the previous scenario was tested successfully");
                 }
 
                 const scn = scenario;
@@ -208,11 +243,9 @@ class Feature {
                     step: step,
                     lineNbr,
                     scenario: scn,
-                    needPreviousScenarios: needPreviousScenarios,
                     file: '',
                     token: ''
                 });
-                lineIndex++;
             }
         }
         return gherkinSteps;

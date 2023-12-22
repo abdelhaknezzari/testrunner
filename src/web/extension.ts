@@ -1,9 +1,24 @@
-import { CancellationToken, CompletionItem, CompletionItemProvider, CompletionList, ExtensionContext, Position, ProviderResult, TextDocument, Uri, commands, languages, window } from 'vscode';
+import { ExtensionContext, Uri, commands, window, workspace } from 'vscode';
 import testRunner from './Runner';
 import channel from './Channel';
 import completer from './Completer';
+import config from './Config';
 
-export function activate(context: ExtensionContext) {
+export async function activate(context: ExtensionContext) {
+
+
+	context.subscriptions.push(
+		commands.registerCommand('testRunner.runTillFailedScenario', async (uri: Uri) => {
+			await testRunner.runFeatureTillFailedScenario(uri);
+		})
+	);
+
+	context.subscriptions.push(
+		commands.registerCommand('testRunner.runFailedFeature', async (uri: Uri) => {
+			await testRunner.runFailedFeature(uri);
+		})
+	);
+
 	context.subscriptions.push(
 		commands.registerCommand('testRunner.runCurrentFeature', async (uri: Uri) => {
 			await testRunner.runFeature(uri);
@@ -28,11 +43,23 @@ export function activate(context: ExtensionContext) {
 		})
 	);
 
-	context.subscriptions.push(
-		commands.registerCommand('testRunner.runPreviousScenarios', async (uri: Uri) => {
-			await testRunner.runBefore(uri);
-		})
-	);
+	// const deactivatedFunctions = process.env.TEST_RUNNER_DEACTIVATED_FUNCTIONS;
+	// if(deactivatedFunctions){
+	// 	const activateRunTillFailedScenario = !deactivatedFunctions.includes( "runTillFailedScenario");
+	// 	commands.executeCommand('setContext', 'showCommandRunTillFailedScenario', activateRunTillFailedScenario);
+	// 	const activateRunFailedFeature = !deactivatedFunctions.includes( "runFailedFeature");
+	// 	commands.executeCommand('setContext', 'showCommandRunFailedFeature', activateRunFailedFeature);
+	// } else {
+	// 	commands.executeCommand('setContext', 'showCommandRunTillFailedScenario', true);
+	// 	commands.executeCommand('setContext', 'showCommandRunFailedFeature', true);
+	// }
+
+
+	// context.subscriptions.push(
+	// 	commands.registerCommand('testRunner.runPreviousScenarios', async (uri: Uri) => {
+	// 		await testRunner.runBefore(uri);
+	// 	})
+	// );
 
 
 

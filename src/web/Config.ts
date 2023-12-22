@@ -50,22 +50,30 @@ class Config {
         return JSON.parse(jsonAsString).configurations.at(0) as LaunchConfig;
     }
 
+    needMockServer(scenarioText:string): boolean {
+        return scenarioText.includes("mock service") || scenarioText.includes("createEntityWithRelation");
+    }
 
     async getLaunchConfig(path: string, feature = "", scenarioText = ""): Promise<LaunchConfig | undefined> {
         try {
             const root = this.getRoot(path);
             const featureFile = feature === "" ? this.getFeature(path) : feature;
-            const conf = await this.readLaunchJsonConfig(root);
-            conf.args = ['./wdio.conf.js', '--spec', featureFile];
-            try {
-                if (scenarioText.includes("mock service")) {
-                    conf.env.NEED_MOCK_SERVER = "true";
-                } else {
-                    conf.env.NEED_MOCK_SERVER = "false";
-                }
-            } catch (error) {
 
+            const conf = await this.readLaunchJsonConfig(root);
+
+            if (!conf.hasOwnProperty('env')) {
+                channel.message(`The file launch.json does not contain field of 'env', add the missing field`);
+                return conf;
             }
+
+            conf.args = ['./wdio.conf.js', '--spec', featureFile];
+
+            if (!conf.hasOwnProperty('env')) {
+                channel.message(`The file launch.json does not contain field of 'env', add the missing field`);
+                return conf;
+            }
+
+            conf.env.NEED_MOCK_SERVER = this.needMockServer(scenarioText) ? 'true' : 'false';
             return conf;
         } catch (error) {
             channel.message(error as string);

@@ -16,6 +16,8 @@
     "onCommand:testRunner.runCurrentFeature",
     "onCommand:testRunner.runCurrentScenario",
     "onCommand:testRunner.runScenariosAfterwards",
+    "onCommand:testRunner.runFailedFeature",
+    "onCommand:testRunner.runTillFailedScenario",
     "workspaceContains:*.md"
   ],
   "browser": "./dist/web/extension.js",
@@ -40,35 +42,55 @@
         "when": "resourceLangId == feature",
         "command": "testRunner.runScenariosAfterwards",
         "title": "Run from current scenario"
+      },
+      {
+        "when": "resourceLangId == feature",
+        "command": "testRunner.runTillFailedScenario",
+        "title": "Run failed feature till failed scenario"
+      },
+      {
+        "when": "resourceLangId == feature",
+        "command": "testRunner.runFailedFeature",
+        "title": "Run failed feature file"
       }
 
     ],
     "menus": {
       "explorer/context": [
         {
-          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "when": "resourceExtname == .feature",
           "command": "testRunner.runCurrentFeature",
           "title": "Run feature"
         },
         {
-          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "when": "resourceExtname == .feature",
           "command": "testRunner.runPullReqestFailingScenarios",
           "title": "Run failing scenarios of Pull Request"
+        },
+        {
+          "when": "resourceExtname == .feature",
+          "command": "testRunner.runTillFailedScenario",
+          "title": "Run failed feature till failed scenario"
+        },
+        {
+          "when": "resourceExtname == .feature",
+          "command": "testRunner.runFailedFeature",
+          "title": "Run failed feature file"
         }
       ],
       "editor/context": [
         {
-          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "when": "resourceExtname == .feature",
           "command": "testRunner.runCurrentScenario",
           "title": "Run scenario"
         },
         {
-          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "when": "resourceExtname == .feature",
           "command": "testRunner.runCurrentFeature",
           "title": "Run feature"
         },
         {
-          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "when": "resourceExtname == .feature",
           "command": "testRunner.runPullReqestFailingScenarios",
           "title": "Run failing scenarios of Pull Request"
         },
@@ -76,6 +98,16 @@
           "when": "resourceLangId == feature",
           "command": "testRunner.runScenariosAfterwards",
           "title": "Run from current scenario"
+        },
+        {
+          "when": "resourceExtname == .feature ",
+          "command": "testRunner.runTillFailedScenario",
+          "title": "Run failed feature till failed scenario"
+        },
+        {
+          "when": "resourceExtname == .feature",
+          "command": "testRunner.runFailedFeature",
+          "title": "Run failed feature file"
         }
       ],
       "editor/title": [
@@ -86,22 +118,34 @@
           "group": "navigation@-1001"
         },
         {
-          "when": "!inQuickOpen && !inMenuBar && !inPanel && (resourceExtname == .feature || resourceExtname == .features)",
+          "when": "!inQuickOpen && !inMenuBar && !inPanel && resourceExtname == .feature ",
           "command": "testRunner.runCurrentFeature",
           "title": "Run feature",
           "group": "navigation@-1002"
         },
         {
-          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "when": "resourceExtname == .feature",
           "command": "testRunner.runPullReqestFailingScenarios",
           "title": "Run failing scenarios of Pull Request",
           "group": "navigation@-1003"
         },
         {
-          "when": "resourceExtname == .feature || resourceExtname == .features",
+          "when": "resourceExtname == .feature ",
           "command": "testRunner.runScenariosAfterwards",
           "title": "Run from current scenario",
           "group": "navigation@-1004"
+        },
+        {
+          "when": "resourceExtname == .feature ",
+          "command": "testRunner.runTillFailedScenario",
+          "title": "Run failed feature till failed scenario",
+          "group": "navigation@-1005"
+        },
+        {
+          "when": "resourceExtname == .feature",
+          "command": "testRunner.runFailedFeature",
+          "title": "Run failed feature file",
+          "group": "navigation@-1006"
         }
       ]
     },
